@@ -1,0 +1,28 @@
+version: "3.8"
+services:
+  api:
+    container_name: shopper_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    container_name: shopper_db
+    image: postgres
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-securepassword}
+      - POSTGRES_DB=${DB_NAME:-mydatabase}
+      - POSTGRES_USER=${DB_USER:-myuser}
+
+volumes:
+  data: {}
