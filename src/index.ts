@@ -1,6 +1,4 @@
-import express, { Express } from "express";
+import "dotenv/config";
+import Server from "./infrastructure/express/Server";
 
-const app = express();
-app.use(express.json());
-
-app.listen(3000, () => console.log("server running"));
+Server.init();
