@@ -57,7 +57,7 @@ class GeminiApiService {
     mimeType: string,
     uri: string
   ): Promise<string | any> {
-    const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     try {
       const generatedContent = await model.generateContent([
