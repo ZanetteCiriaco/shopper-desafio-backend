@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
-import { isValidBase64Image } from "../../utils/Base64Validator";
-import GeminiApiService from "../../infrastructure/geminiAPI/GeminiApiService";
+import { isValidBase64Image } from "../../utils/Base64Manager";
 import {
   ConfirmValidation,
   MeasurementValidation,
@@ -8,6 +7,7 @@ import {
 import MeasurementService from "./MeasurementService";
 import { MeasurementEntity } from "./MeasurementEntity";
 import { v4 as uuidv4 } from "uuid";
+import GeminiApiService from "../../infrastructure/geminiAPI/GeminiApiService";
 
 class MeasurementController {
   async upload(request: Request, response: Response): Promise<Response> {
@@ -17,12 +17,39 @@ class MeasurementController {
       if (!isValidBase64Image(value.image) || error) {
         return response.status(400).send({
           error_code: "INVALID_DATA",
+          error_description: error?.details,
         });
       }
 
-      const gemini = await GeminiApiService.analyzeImage(value.image);
+      const hasMeasureType = await MeasurementService.hasSomeTypeMeasurements(
+        value.customer_code,
+        value.measure_datetime,
+        value.measure_type
+      );
 
-      console.log(gemini);
+      if (hasMeasureType) {
+        return response.status(409).send({
+          error_code: "DOUBLE_REPORT",
+          error_description: "Leitura do mês já realizada",
+        });
+      }
+
+      const uploadResponse = await GeminiApiService.uploadImage(
+        value.image,
+        "Meter Reading"
+      );
+
+      if (!uploadResponse.file.uri) {
+        return response.status(500).send({
+          error_code: "INTERNAL_SERVER_ERROR",
+          error_description: "An unexpected error occurred",
+        });
+      }
+
+      const gemini = await GeminiApiService.analyzeImage(
+        uploadResponse.file.mimeType,
+        uploadResponse.file.uri
+      );
 
       if (typeof gemini.value !== "number") {
         return response.status(503).send({
@@ -33,7 +60,7 @@ class MeasurementController {
 
       const newMeasure: MeasurementEntity = {
         id: uuidv4(),
-        image: value.image,
+        image: uploadResponse.file.uri,
         value: gemini.value,
         customer_id: value.customer_code,
         datetime: value.measure_datetime,
@@ -44,14 +71,14 @@ class MeasurementController {
       const measure = await MeasurementService.create(newMeasure);
 
       if (!measure) {
-        return response.status(409).send({
-          error_code: "DOUBLE_REPORT",
-          error_description: "Leitura do mês já realizada",
+        return response.status(500).send({
+          error_code: "INTERNAL_SERVER_ERROR",
+          error_description: "An unexpected error occurred",
         });
       }
 
       return response.status(200).send({
-        image_url: "",
+        image_url: measure.image,
         measure_value: gemini.value,
         measure_id: measure.id,
       });
