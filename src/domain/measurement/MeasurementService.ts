@@ -70,16 +70,6 @@ class MeasurementService {
       id: customer_id,
     };
 
-    // const hasSomeTypeMeasure = await this.hasSomeTypeMeasurements(
-    //   customer_id,
-    //   datetime,
-    //   type
-    // );
-
-    // if (hasSomeTypeMeasure) {
-    //   return null;
-    // }
-
     if (await this.createCustomerIfNoHave(customer_id, customer)) {
       return await this.repository.create(data);
     }
