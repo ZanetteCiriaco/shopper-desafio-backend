@@ -64,27 +64,34 @@ class MeasurementService {
   }
 
   async create(data: MeasurementEntity) {
-    const { customer_id, datetime, type } = data;
+    const { customer_id } = data;
 
     const customer: CustomersEntity = {
       id: customer_id,
     };
 
-    const hasSomeTypeMeasure = await this.hasSomeTypeMeasurements(
-      customer_id,
-      datetime,
-      type
-    );
+    // const hasSomeTypeMeasure = await this.hasSomeTypeMeasurements(
+    //   customer_id,
+    //   datetime,
+    //   type
+    // );
 
-    if (hasSomeTypeMeasure) {
-      return null;
-    }
+    // if (hasSomeTypeMeasure) {
+    //   return null;
+    // }
 
     if (await this.createCustomerIfNoHave(customer_id, customer)) {
       return await this.repository.create(data);
     }
 
     return null;
+  }
+
+  async getAllByMounthFromCustomer(customer_id: string, datetime: Date) {
+    return await this.repository.getAllByMonthAndCustomer(
+      customer_id,
+      datetime
+    );
   }
 
   private async createCustomerIfNoHave(
@@ -101,11 +108,7 @@ class MeasurementService {
     return true;
   }
 
-  private async hasSomeTypeMeasurements(
-    customer_id: string,
-    date: Date,
-    type: string
-  ) {
+  async hasSomeTypeMeasurements(customer_id: string, date: Date, type: string) {
     const measures = await this.repository.getAllByMonthAndCustomer(
       customer_id,
       date
